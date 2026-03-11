@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agrowaste X</title>
+    <link rel="stylesheet" href="farmer.css">
+    <script src="config.js"></script>
+    <style>
+        .success-message {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 30px 50px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            font-size: 20px;
+            text-align: center;
+        }
+        
+        .error-message {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #f44336;
+            color: white;
+            padding: 30px 50px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            font-size: 20px;
+            text-align: center;
+        }
+        
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        
+        #estimatedTime {
+            background-color: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-weight: bold;
+            color: #2e7d32;
+            display: none;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <header id="homeheader">
+    <h1>Waste entry</h1>
+    </header>
+    <nav id="navbar">
+        <a href="farmer.html" id="navelement">Home</a>|
+        <a href="farmerlogin.html" id="navelement">Login</a>|
+        <a href="wasteEntry.html" id="navelement" class="active">Waste entry</a>|
+        <a href="reports.html" id="navelement">Reports</a>
+        <button id="logoutBtn" style="display:none;" onclick="logout()">Logout</button>
+    </nav>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="success-message" id="successMessage">
+        ✓ Your waste entry is successful!
+    </div>
+    <div class="error-message" id="errorMessage">
+        ⚠ Please login first to access waste entry!
+    </div>
+
+    <div id="divbody">
+        <h1>Enter Waste Details:</h1>
+        <div id="container">
+            <form id="wasteEntryForm">
+                <div id="feild">
+                    <label for="typeOfWaste">Type of Waste:</label>
+                    <select id="typeOfWaste" required>
+                        <option value="">Select waste type</option>
+                        <option value="Vegetable Waste">Vegetable Waste</option>
+                        <option value="Fruit Waste">Fruit Waste</option>
+                        <option value="Crop Residue">Crop Residue</option>
+                        <option value="Animal Manure">Animal Manure</option>
+                        <option value="Garden Waste">Garden Waste</option>
+                        <option value="Food Scraps">Food Scraps</option>
+                    </select>
+                </div>
+
+                <div id="feild">
+                    <label for="wasteAmount">Amount of Waste (kg):</label>
+                    <input type="number" id="wasteAmount" placeholder="Enter amount in kg" min="1" required>
+                </div>
+
+                <div id="feild">
+                    <div id="estimatedTime"></div>
+                </div>
+
+                <input type="submit" id="button" value="Submit Entry">
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function logout() {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('loggedInUser');
+            window.location.href = 'farmer.html';
+        }
+
+        // Check if user is logged in
+        window.addEventListener('load', function() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            if (!isLoggedIn || isLoggedIn !== 'true') {
+                document.getElementById('overlay').style.display = 'block';
+                document.getElementById('errorMessage').style.display = 'block';
+                
+                setTimeout(function() {
+                    window.location.href = 'farmerlogin.html';
+                }, 2000);
+            } else {
+                document.getElementById('logoutBtn').style.display = 'inline-block';
+            }
+        });
+
+        // Base composting time for each waste type (in days for 10kg)
+        const baseCompostingTimes = {
+            'Vegetable Waste': 30,
+            'Fruit Waste': 25,
+            'Crop Residue': 60,
+            'Animal Manure': 90,
+            'Garden Waste': 45,
+            'Food Scraps': 20
+        };
+
+        // Calculate composting time based on waste type and amount
+        function calculateCompostingTime(wasteType, amount) {
+            const baseTime = baseCompostingTimes[wasteType];
+            
+            // Formula: Base time + (amount / 10) * adjustment factor
+            // Larger amounts take proportionally longer
+            const adjustmentFactor = 2; // 2 days per additional 10kg
+            const additionalTime = Math.floor((amount / 10) * adjustmentFactor);
+            
+            return baseTime + additionalTime;
+        }
+
+        // Update estimated time when either field changes
+        function updateEstimatedTime() {
+            const wasteType = document.getElementById('typeOfWaste').value;
+            const amount = document.getElementById('wasteAmount').value;
+            const estimatedTimeDiv = document.getElementById('estimatedTime');
+            
+            if (wasteType && amount && amount > 0) {
+                const days = calculateCompostingTime(wasteType, parseFloat(amount));
+                estimatedTimeDiv.innerHTML = `<strong>Estimated composting time:</strong><br>${days} days`;
+                estimatedTimeDiv.style.display = 'block';
+            } else {
+                estimatedTimeDiv.style.display = 'none';
+            }
+        }
+
+        document.getElementById('typeOfWaste').addEventListener('change', updateEstimatedTime);
+        document.getElementById('wasteAmount').addEventListener('input', updateEstimatedTime);
+
+        document.getElementById('wasteEntryForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const wasteType = document.getElementById('typeOfWaste').value;
+            const amount = parseFloat(document.getElementById('wasteAmount').value);
+            const compostTime = calculateCompostingTime(wasteType, amount);
+            
+            // Get current logged-in user
+            const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            const userEmail = loggedInUser.email;
+            
+            const wasteEntry = {
+                userEmail: userEmail,
+                type: wasteType,
+                amount: amount,
+                compostTime: compostTime,
+                entryDate: new Date().toISOString(),
+                completionDate: new Date(Date.now() + compostTime * 24 * 60 * 60 * 1000).toISOString()
+            };
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/waste-entries', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(wasteEntry)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success message
+                    document.getElementById('overlay').style.display = 'block';
+                    document.getElementById('successMessage').style.display = 'block';
+                    
+                    // Hide message after 2 seconds
+                    setTimeout(function() {
+                        document.getElementById('overlay').style.display = 'none';
+                        document.getElementById('successMessage').style.display = 'none';
+                    }, 2000);
+                    
+                    this.reset();
+                    document.getElementById('estimatedTime').style.display = 'none';
+                } else {
+                    alert('Failed to save entry: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to connect to server. Please make sure the server is running.');
+            }
+        });
+    </script>
+
+</body>
+</html>

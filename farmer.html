@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agrowaste X</title>
+    <link rel="stylesheet" href="farmer.css">
+</head>
+
+<body>
+    <header id="homeheader">
+    <h1>Agrowaste x</h1>
+    </header>
+    <nav id="navbar">
+        <a href="farmer.html" id="navelement" class="active">Home</a>|
+        <a href="farmerlogin.html" id="navelement">Login</a>|
+        <a href="wasteEntry.html" id="navelement">Waste entry</a>|
+        <a href="reports.html" id="navelement">Reports</a>
+        <button id="logoutBtn" style="display:none;" onclick="logout()">Logout</button>
+    </nav>
+
+    <div id="homeContent">
+        <section id="hero">
+            <h2>Welcome to AgroWasteX</h2>
+            <p>Your Partner in Sustainable Farming</p>
+        </section>
+
+        <section id="about">
+            <h3>Why AgroWasteX?</h3>
+            <p>Every day, tons of agricultural waste like vegetable peels, crop residues, and animal manure go unused on farms. AgroWasteX helps you turn this waste into valuable compost, reducing costs and improving soil health. Track your waste, know exactly when your compost will be ready, and make your farm more productive and eco-friendly.</p>
+        </section>
+
+        <section id="features">
+            <h3>What We Offer</h3>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🌾 Easy Waste Logging</h4>
+                    <p>Record vegetable waste, fruit scraps, crop residue, manure, and more in seconds</p>
+                </div>
+                <div class="feature-card">
+                    <h4>⏰ Know When It's Ready</h4>
+                    <p>Get automatic composting time estimates - no guesswork needed</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📋 Track Your Progress</h4>
+                    <p>See all your entries and monitor which batches are ready to use</p>
+                </div>
+                <div class="feature-card">
+                    <h4>💰 Save Money</h4>
+                    <p>Reduce fertilizer costs by creating your own nutrient-rich compost</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="cta">
+            <h3>Start Composting Smarter Today!</h3>
+            <p>Join farmers who are already making their farms more sustainable</p>
+            <a href="farmerlogin.html" class="cta-button">Get Started</a>
+        </section>
+    </div>
+
+    <script>
+        function logout() {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('loggedInUser');
+            window.location.href = 'farmer.html';
+        }
+
+        window.addEventListener('load', function() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            if (isLoggedIn === 'true') {
+                document.getElementById('logoutBtn').style.display = 'inline-block';
+            }
+        });
+    </script>
+
+
+</body>
+</html>

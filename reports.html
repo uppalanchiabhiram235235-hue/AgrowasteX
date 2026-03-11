@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agrowaste X - Reports</title>
+    <link rel="stylesheet" href="farmer.css">
+    <script src="config.js"></script>
+    <style>
+        #reportsContainer {
+            width: 90%;
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #2b2b2b;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .status-pending {
+            color: orange;
+            font-weight: bold;
+        }
+        
+        .status-completed {
+            color: green;
+            font-weight: bold;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #666;
+        }
+        
+        #clearButton {
+            margin: 20px auto;
+            display: block;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        #clearButton:hover {
+            background-color: #cc0000;
+        }
+
+        .confirm-dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            text-align: center;
+        }
+
+        .confirm-dialog h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .confirm-dialog button {
+            margin: 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .confirm-yes {
+            background-color: #ff4444;
+            color: white;
+        }
+
+        .confirm-yes:hover {
+            background-color: #cc0000;
+        }
+
+        .confirm-no {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .confirm-no:hover {
+            background-color: #45a049;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+    </style>
+</head>
+
+<body>
+    <header id="homeheader">
+        <h1>Waste Reports</h1>
+    </header>
+    <nav id="navbar">
+        <a href="farmer.html" id="navelement">Home</a>|
+        <a href="farmerlogin.html" id="navelement">Login</a>|
+        <a href="wasteEntry.html" id="navelement">Waste entry</a>|
+        <a href="reports.html" id="navelement" class="active">Reports</a>
+        <button id="logoutBtn" style="display:none;" onclick="logout()">Logout</button>
+    </nav>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="confirm-dialog" id="confirmDialog">
+        <h3>Are you sure?</h3>
+        <p>Do you want to clear all reports? This action cannot be undone.</p>
+        <button class="confirm-yes" onclick="confirmClear()">Yes, Clear All</button>
+        <button class="confirm-no" onclick="cancelClear()">Cancel</button>
+    </div>
+
+    <div id="reportsContainer">
+        <h2 style="text-align: center; color: #2b2b2b;">All Waste Entries</h2>
+        <div id="tableContainer"></div>
+        <button id="clearButton">Clear All Reports</button>
+    </div>
+
+    <script>
+        function logout() {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('loggedInUser');
+            window.location.href = 'farmer.html';
+        }
+
+        async function loadReports() {
+            // Check if user is logged in
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            if (!isLoggedIn || isLoggedIn !== 'true') {
+                window.location.href = 'farmerlogin.html';
+                return;
+            }
+
+            // Show logout button
+            document.getElementById('logoutBtn').style.display = 'inline-block';
+
+            // Get current logged-in user
+            const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            const userEmail = loggedInUser.email;
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/waste-entries/${userEmail}`);
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.message);
+                }
+                
+                const userEntries = result.entries;
+                const tableContainer = document.getElementById('tableContainer');
+                
+                if (userEntries.length === 0) {
+                    tableContainer.innerHTML = '<div class="no-data">No waste entries found. Please add entries from the Waste Entry page.</div>';
+                    return;
+                }
+                
+                const now = new Date();
+                
+                let tableHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Entry Date</th>
+                                <th>Type of Waste</th>
+                                <th>Amount (kg)</th>
+                                <th>Composting Time (days)</th>
+                                <th>Completion Date</th>
+                                <th>Days Remaining</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                userEntries.forEach(entry => {
+                    const entryDate = new Date(entry.entryDate);
+                    const completionDate = new Date(entry.completionDate);
+                    const daysRemaining = Math.ceil((completionDate - now) / (1000 * 60 * 60 * 24));
+                    const status = daysRemaining <= 0 ? 'Completed' : 'In Progress';
+                    const statusClass = daysRemaining <= 0 ? 'status-completed' : 'status-pending';
+                    
+                    tableHTML += `
+                        <tr>
+                            <td>${entryDate.toLocaleDateString()}</td>
+                            <td>${entry.type}</td>
+                            <td>${entry.amount}</td>
+                            <td>${entry.compostTime}</td>
+                            <td>${completionDate.toLocaleDateString()}</td>
+                            <td>${daysRemaining > 0 ? daysRemaining : 0}</td>
+                            <td class="${statusClass}">${status}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += `
+                        </tbody>
+                    </table>
+                `;
+                
+                tableContainer.innerHTML = tableHTML;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('tableContainer').innerHTML = '<div class="no-data">Failed to load reports. Please make sure the server is running.</div>';
+            }
+        }
+        
+        document.getElementById('clearButton').addEventListener('click', function() {
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('confirmDialog').style.display = 'block';
+        });
+
+        async function confirmClear() {
+            // Get current logged-in user
+            const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            const userEmail = loggedInUser.email;
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/waste-entries/${userEmail}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('overlay').style.display = 'none';
+                    document.getElementById('confirmDialog').style.display = 'none';
+                    loadReports();
+                } else {
+                    alert('Failed to clear reports: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to connect to server.');
+            }
+        }
+
+        function cancelClear() {
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('confirmDialog').style.display = 'none';
+        }
+        
+        loadReports();
+    </script>
+
+</body>
+</html>
