@@ -46,6 +46,31 @@
             window.location.href = 'farmer.html';
         }
 
+        // Show error message function
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: #f44336;
+                color: white;
+                padding: 30px 50px;
+                border-radius: 10px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                z-index: 1000;
+                font-size: 18px;
+                text-align: center;
+            `;
+            errorDiv.textContent = message;
+            document.body.appendChild(errorDiv);
+            
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 3000);
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -71,11 +96,11 @@
                     localStorage.setItem('isLoggedIn', 'true');
                     window.location.href = 'wasteEntry.html';
                 } else {
-                    alert('Login failed: ' + result.message);
+                    showError('Login failed: ' + result.message);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Failed to connect to server. Please make sure the server is running.');
+                showError('⚠️ Server not running! Please start the server with: npm start');
             }
         });
     </script>

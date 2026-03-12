@@ -37,7 +37,9 @@ const wasteEntrySchema = new mongoose.Schema({
     amount: { type: Number, required: true },
     compostTime: { type: Number, required: true },
     entryDate: { type: Date, default: Date.now },
-    completionDate: { type: Date, required: true }
+    completionDate: { type: Date, required: true },
+    collected: { type: Boolean, default: false },
+    collectedDate: { type: Date }
 });
 
 const WasteEntry = mongoose.model('WasteEntry', wasteEntrySchema);
@@ -91,6 +93,28 @@ app.delete('/api/waste-entries/:email', async (req, res) => {
     try {
         await WasteEntry.deleteMany({ userEmail: req.params.email });
         res.json({ success: true, message: 'All entries deleted' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Mark Waste Entry as Collected
+app.patch('/api/waste-entries/:id/collect', async (req, res) => {
+    try {
+        const entry = await WasteEntry.findByIdAndUpdate(
+            req.params.id,
+            { 
+                collected: true,
+                collectedDate: new Date()
+            },
+            { new: true }
+        );
+        
+        if (!entry) {
+            return res.status(404).json({ success: false, message: 'Entry not found' });
+        }
+        
+        res.json({ success: true, entry });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
